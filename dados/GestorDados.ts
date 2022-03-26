@@ -1,49 +1,24 @@
-import { Produto } from './Produto';
-
-const salvarProduto = async (key: string, value: any) => {
-  try {
-    const jsonValue = JSON.stringify(value);
-    await AsyncStorage.setItem(key, jsonValue);
-  } catch (e) {}
-}
-const removerProduto = async (key: string) => {
-  try {
-    await AsyncStorage.removeItem(key);
-  } catch(e) {}
-}
-const obterProdutosJSON = async () => {
-  try {
-    let keys: Array<string> = []
-    keys = await AsyncStorage.getAllKeys();
-    return await AsyncStorage.multiGet(keys);
-  } catch(e) { return []; }
-}
-const obterProdutos = async () => {
-  try {
-    let objetos = [];
-    let objJSON = await obterProdutosJSON();
-    if(objJSON!=null && objJSON.length>0)
-      objJSON.forEach(element => {
-        let produto: Produto = JSON.parse(element[1]);
-        objetos.push(produto);
-      });
-    return objetos;
-  } catch(e) { return []; }
-}
-
-class GestorDados{
-  public async remover(chave: number){
-    removerProduto(chave.toString());
-  }
-  public async adicionar(produto: Produto){
-    salvarProduto(produto.codigo.toString(),produto);
-  }
-  public async obterTodos(): Promise<Array<Produto>>{
-    let lista: Array<Produto> = await obterProdutos();
-    return lista;
-  }
-}
-
-export default GestorDados;
-
-                        
+import db from './DatabaseInstance';
+ import { Produto } from './Produto';
+ 
+ class GestorDados {
+     public async remover(chave: string){
+     db.write(()=>
+         db.delete(db.objects('Produto')
+                     .filtered('codigo = $0', parseInt(chave)))
+     );
+     }
+     public async adicionar(produto: Produto){
+     db.write(() => db.create('Produto', produto));
+     }
+     public async obterTodos(): Promise<Array<Produto>>{
+     let objetos = [];
+     for(let obj of db.objects<Produto>('Produto')){
+         objetos.push(JSON.parse(JSON.stringify(obj)));
+     }
+     return objetos;
+     }
+ }
+ 
+ export default GestorDados;
+                     
